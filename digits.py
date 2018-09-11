@@ -80,7 +80,7 @@ def checksum(account):
         account.append(' ERR ')
         return account
 
-def get_acc_num(matrix, dictionary, second_best = False):
+def get_acc_num(matrix, dictionary):
     """ We take sclices of the entire character matrix read from the digits.txt file and assign to them the corresponding number. """
     sizes = np.array([x[x!=0].size for x in indexer(matrix.T, 3)])
     acc = 9*['?'] 
