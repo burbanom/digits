@@ -13,6 +13,7 @@ from scipy import signal
 import itertools
 
 def get_arrangements_num():
+    """ Generate number patterns for all arrangements of 0, -1 and 1 in a 3x3 matrix. """
     arrangements = dict()
     for index, *rest in enumerate(list(itertools.product([True,False], repeat=3))):
         line = 3*[0]
@@ -23,10 +24,10 @@ def get_arrangements_num():
         if rest[0][2]:
             line[2] = 1
         arrangements[str(index)] = line
-            
     return arrangements
 
 def gen_characters_num():
+    """ Create dictionary with all 3x3 matrices that represent digits from 0 to 9 """
     arrangements = get_arrangements_num()
 
     top = {'0':3*[0], '1':[0, -1, 0]}
@@ -65,6 +66,7 @@ def to_num(a_string):
     return nums
 
 def checksum(account):
+    """ Used to determine if an account number is valid or not """
     if account[-1] == ' ':
         to_check = account[:-1]
     else:
@@ -79,14 +81,14 @@ def checksum(account):
         return account
 
 def get_acc_num(matrix, dictionary, second_best = False):
-    """ We assign the best match to each 3x3 matrix and if there is no match, we propose the closest matches """
+    """ We take sclices of the entire character matrix read from the digits.txt file and assign to them the corresponding number. """
     sizes = np.array([x[x!=0].size for x in indexer(matrix.T, 3)])
     acc = 9*['?'] 
-    second_best_corrs = dict()
+    second_best_corrs = dict() # this dictionary contains the correlations and positions where a given 3x3 matrix had a good match
     for key, val in dictionary.items():
         # number of non-zero character matrix elements
         non_zero = val[val!=0].size
-        # correlation calculation
+        # correlation calculation between the matrix slice and the 3x3 val matrix that is mapped to a given number
         corr = signal.correlate(matrix, val, 'valid')
 
         holder = np.zeros(len(corr[0]), dtype = np.int8)
@@ -107,7 +109,7 @@ def get_acc_num(matrix, dictionary, second_best = False):
                     acc[index] = key
                     
     
-    if '?' in acc:
+    if '?' in acc: # if a number has not been properly assigned, we can use the second_best_corrs to propose values
         possibilities = list()
         for index in [i for i, x in enumerate(acc) if x == '?']:
             closest_index = dict()
@@ -142,6 +144,7 @@ if __name__ == "__main__":
             for line in lines[:3]:
                 digit_matrix.append(to_num(line))
 
+    # matrix containing all the characters in the file converted to 0, -1, 1                    
     digit_matrix = np.array(digit_matrix)
 
     for row in indexer(digit_matrix, 3):
