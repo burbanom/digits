@@ -1,49 +1,48 @@
 #!/usr/bin/env python3
 
-"""digits.py: Script to identify digits written as pipes and undescores."""
+"""digits.py: Script to identify digits written as pipes and undescores. To be run using python 3.
+    Proposed solution to: https://codingdojo.org/kata/BankOCR/"""
 
 __author__ = "Mario Burbano"
 __version__ = "0.1"
 __maintainer__ = "Mario Burbano"
 __email__ = "burbanom@tcd.ie"
 
-import os, sys
-from pathlib import Path
+import numpy as np
+from scipy import signal 
 import itertools
 
-def get_arrangements():
+def get_arrangements_num():
     arrangements = dict()
     for index, *rest in enumerate(list(itertools.product([True,False], repeat=3))):
-        line = 3*[' ']
+        line = 3*[0]
         if rest[0][0]:
-            line[0] = '|'
+            line[0] = 1
         if rest[0][1]:
-            line[1] = '_'
+            line[1] = -1
         if rest[0][2]:
-            line[2] = '|'
+            line[2] = 1
         arrangements[str(index)] = line
             
     return arrangements
 
-def gen_digit(list_of_arrangements):
-    return "\n".join([''.join((x)) for x in list_of_arrangements])
+def gen_characters_num():
+    arrangements = get_arrangements_num()
 
-def gen_characters():
-    arrangements = get_arrangements()
-
-    top = {'0':3*[' '], '1':[' ', '_', ' ']}
+    top = {'0':3*[0], '1':[0, -1, 0]}
     
     # N.B arrangements['3'] and arrangements['5'] are not present in middle section
-    zero =  [top['1'], arrangements["2"], arrangements["0"], arrangements["7"]]
-    one =   [top['0'], arrangements['6'], arrangements['6'], arrangements['7']]
-    two =   [top['1'], arrangements['4'], arrangements['1'], arrangements['7']]
-    three = [top['1'], arrangements['4'], arrangements['4'], arrangements['7']]
-    four =  [top['0'], arrangements['0'], arrangements['6'], arrangements['7']]
-    five =  [top['1'], arrangements['1'], arrangements['4'], arrangements['7']]
-    six =   [top['0'], arrangements['1'], arrangements['0'], arrangements['7']]
-    seven = [top['1'], arrangements['6'], arrangements['6'], arrangements['7']]
-    eight = [top['1'], arrangements['0'], arrangements['0'], arrangements['7']]
-    nine =  [top['1'], arrangements['0'], arrangements['6'], arrangements['7']]
+    # and in addition to these, arrangements['2'] is not present in the bottom
+    zero =  np.array([top['1'], arrangements["2"], arrangements["0"]])
+    one =   np.array([top['0'], arrangements['6'], arrangements['6']])
+    two =   np.array([top['1'], arrangements['4'], arrangements['1']])
+    three = np.array([top['1'], arrangements['4'], arrangements['4']])
+    four =  np.array([top['0'], arrangements['0'], arrangements['6']])
+    five =  np.array([top['1'], arrangements['1'], arrangements['4']])
+    six =   np.array([top['1'], arrangements['1'], arrangements['0']])
+    seven = np.array([top['1'], arrangements['6'], arrangements['6']])
+    eight = np.array([top['1'], arrangements['0'], arrangements['0']])
+    nine =  np.array([top['1'], arrangements['0'], arrangements['4']])
     
     characters = {'0':zero, '1':one, '2':two, '3':three, \
                   '4':four, '5':five, '6':six, '7':seven, \
@@ -53,16 +52,98 @@ def gen_characters():
 def indexer(iterable, step):
     return [iterable[i:i+step] for i in range(0, len(iterable), step)]
 
-if __name__ == "__main__":
+def to_num(a_string):
+    """Function to convert underscores and pipes into 0, 1 and -1 """
+    nums = list()
+    for x in a_string.rstrip('\n'):
+        if x == '_':
+            nums.append(-1)
+        elif x == '|':
+            nums.append(1)
+        else:
+            nums.append(0)
+    return nums
 
+def checksum(account):
+    if account[-1] == ' ':
+        to_check = account[:-1]
+    else:
+        to_check = account
+        
+    to_check = np.flip(np.array(to_check, dtype=np.int),0)
+
+    if np.mod(np.dot(to_check, np.arange(1,10)),11) == 0:
+        return account
+    else:
+        account.append(' ERR ')
+        return account
+
+def get_acc_num(matrix, dictionary, second_best = False):
+    """ We assign the best match to each 3x3 matrix and if there is no match, we propose the closest matches """
+    sizes = np.array([x[x!=0].size for x in indexer(matrix.T, 3)])
+    acc = 9*['?'] 
+    second_best_corrs = dict()
+    for key, val in dictionary.items():
+        # number of non-zero character matrix elements
+        non_zero = val[val!=0].size
+        # correlation calculation
+        corr = signal.correlate(matrix, val, 'valid')
+
+        holder = np.zeros(len(corr[0]), dtype = np.int8)
+        for i, x in enumerate((corr != non_zero)[0]):
+            if x:
+                holder[i] = corr[0][i]
+                
+        second_best = np.where(holder == holder.max())
+        second_best_corrs[key] = (holder.max(),(second_best[0]/3).astype(int))
+
+
+        overlaps, indices = np.where(corr == non_zero)
+
+        if len(indices) > 0:
+            indices = np.array(list(map(int,indices/3)))
+            for index in indices:
+                if sizes[index] == non_zero:
+                    acc[index] = key
+                    
     
-    for char in gen_characters().values():    
-        print(gen_digit(char))
+    if '?' in acc:
+        possibilities = list()
+        for index in [i for i, x in enumerate(acc) if x == '?']:
+            closest_index = dict()
+            for key, val in second_best_corrs.items():
+                if index in val[1]:
+                    closest_index[key] = val[0]
+
+            for replace in sorted(closest_index, key=closest_index.get, reverse=True):
+                acc[index] = replace
+                dummy = acc.copy()
+                dummy.append(' ')
+
+                possibilities.append(dummy)
+
+        possibilities = [checksum(sublist) for sublist in possibilities if '?' not in sublist]
+        possibilities = [item for sublist in possibilities for item in sublist]
+        
+        account = ''.join(possibilities)
+            
+    else:
+        account = ''.join(checksum(acc))             
+    return account
+
+if __name__ == "__main__":
     
+    characters_num = gen_characters_num()
+
+    # Here we read the file an transform its characters into a matrix
+    digit_matrix = list()
     with open('digits.txt') as f:
-#        for index, line in enumerate(f.readlines()):
-        for index, line in enumerate(indexer(f.readlines(), 4)):
-            print(f"{index} {line}")
-#            if len(line) != 28:
-#            line = line.strip('\n')
-#            print(f"{index+1:} {indexer(line, 3)}")
+        for index, lines in enumerate(indexer(f.readlines(), 4)):
+            for line in lines[:3]:
+                digit_matrix.append(to_num(line))
+
+    digit_matrix = np.array(digit_matrix)
+
+    for row in indexer(digit_matrix, 3):
+        acc = get_acc_num(row, characters_num)
+        print(acc)
