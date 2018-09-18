@@ -88,14 +88,20 @@ def get_acc_num(matrix, dictionary):
     for key, val in dictionary.items():
         # number of non-zero character matrix elements
         non_zero = val[val!=0].size
+		
         # correlation calculation between the matrix slice and the 3x3 val matrix that is mapped to a given number
+		# From scipy: https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.correlate.html
+		# This approach is limited by the fact that the 3x3 matrix is likely to be matched in many places throughout the character file matrix. 
+		# This is circumvented, however by making sure that the size (non-zero), as well as the correlation provide a good match.
         corr = signal.correlate(matrix, val, 'valid')
 
         holder = np.zeros(len(corr[0]), dtype = np.int8)
         for i, x in enumerate((corr != non_zero)[0]):
             if x:
                 holder[i] = corr[0][i]
-                
+              
+		# We keep track of the digigs that provide a good match, so that if we need to guess the identity of a character 
+		# we do not have to perform this loop again!	  
         second_best = np.where(holder == holder.max())
         second_best_corrs[key] = (holder.max(),(second_best[0]/3).astype(int))
 
