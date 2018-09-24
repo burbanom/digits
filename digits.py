@@ -163,7 +163,11 @@ if __name__ == "__main__":
     debug = args.debug
 
     if filename.is_file():
-        # Here we read the file an transform its characters into a matrix
+        # Here we read the input file file and transform its characters into a matrix
+        # containing 0, -1 and 1, which correspond to:
+        # 0 for characters that are not a pipe or an underscore
+        # -1 for characters that are underscores
+        # 1 for pipe characters
         digit_matrix = list()
         with open('digits.txt') as f:
             for index, lines in enumerate(indexer(f.readlines(), 4)):
@@ -173,10 +177,7 @@ if __name__ == "__main__":
         print('The filename provided is not valid')
         exit()
 
-    # matrix containing all the characters in the file converted to:
-    # 0 for characters that are not a pipe or an underscore
-    # -1 for characters that are underscores
-    # 1 for pipe characters
+    # Convert the matrix to a numpy array
     digit_matrix = np.array(digit_matrix)
 
     characters_num = gen_characters_num(debug)
