@@ -36,7 +36,7 @@ def get_arrangements_num():
         arrangements[str(index)] = line
     return arrangements
 
-def gen_characters_num():
+def gen_characters_num(debug = False):
     """ Create dictionary with all 3x3 matrices that represent digits from 0 to 9 """
     arrangements = get_arrangements_num()
 
@@ -58,7 +58,13 @@ def gen_characters_num():
     characters = {'0':zero, '1':one, '2':two, '3':three, \
                   '4':four, '5':five, '6':six, '7':seven, \
                   '8':eight, '9':nine}
-    return characters    
+    if debug:
+        # Confirm that the 3x3 matrices assigned to each digit are correct
+        for key, val in characters.items():
+            print(f"{key}")
+            print(val)
+
+    return characters
 
 def indexer(iterable, step):
     return [iterable[i:i+step] for i in range(0, len(iterable), step)]
@@ -167,10 +173,13 @@ if __name__ == "__main__":
         print('The filename provided is not valid')
         exit()
 
-    # matrix containing all the characters in the file converted to 0, -1, 1                    
+    # matrix containing all the characters in the file converted to:
+    # 0 for characters that are not a pipe or an underscore
+    # -1 for characters that are underscores
+    # 1 for pipe characters
     digit_matrix = np.array(digit_matrix)
 
-    characters_num = gen_characters_num()
+    characters_num = gen_characters_num(debug)
 
     for row in indexer(digit_matrix, 3):
         acc = get_acc_num(row, characters_num)
