@@ -11,6 +11,16 @@ __email__ = "burbanom@tcd.ie"
 import numpy as np
 from scipy import signal 
 import itertools
+import argparse
+from pathlib import Path
+
+def parse_commandline_arguments():
+    parser = argparse.ArgumentParser( description = 'Script to identify digits written as pipes and underscores' )
+    ###########################################################################################################################################
+    parser.add_argument( '--file', '-f', metavar = 'S', type=str, required = True, help='The file that contains the input digits' )
+    parser.add_argument( '--debug', '-d', required = False, action = 'store_true', help='Activate debug/testing mode' )
+    ############################################################################################################################################
+    return parser.parse_args()
 
 def get_arrangements_num():
     """ Generate number patterns for all arrangements of 0, -1 and 1 in a 3x3 matrix. """
@@ -140,18 +150,27 @@ def get_acc_num(matrix, dictionary):
     return account
 
 if __name__ == "__main__":
-    
-    characters_num = gen_characters_num()
 
-    # Here we read the file an transform its characters into a matrix
-    digit_matrix = list()
-    with open('digits.txt') as f:
-        for index, lines in enumerate(indexer(f.readlines(), 4)):
-            for line in lines[:3]:
-                digit_matrix.append(to_num(line))
+    args = parse_commandline_arguments()
+
+    filename = Path(args.file)
+    debug = args.debug
+
+    if filename.is_file():
+        # Here we read the file an transform its characters into a matrix
+        digit_matrix = list()
+        with open('digits.txt') as f:
+            for index, lines in enumerate(indexer(f.readlines(), 4)):
+                for line in lines[:3]:
+                    digit_matrix.append(to_num(line))
+    else:
+        print('The filename provided is not valid')
+        exit()
 
     # matrix containing all the characters in the file converted to 0, -1, 1                    
     digit_matrix = np.array(digit_matrix)
+
+    characters_num = gen_characters_num()
 
     for row in indexer(digit_matrix, 3):
         acc = get_acc_num(row, characters_num)
