@@ -22,28 +22,26 @@ def random_with_N_digits(n):
     return randint(range_start, range_end)
 
 class TestGetAccNum(unittest.TestCase):
+
     def setUp(self):
         self.characters_num = gen_characters_num()
         # generate a random number of N digits
         self.digit_to_test = random_with_N_digits(9)
+        start = 0
+        end = 3
+        matrix_shape = (3,27)
+        self.matrix = np.zeros(matrix_shape)
+        for index, digit in enumerate(list(str(self.digit_to_test))):
+            self.matrix[start:end,start + index * 3:end + index * 3] =  self.characters_num[digit]
 
     def test_get_acc_num(self):
         print(f"Testing the digit {self.digit_to_test}")
-        matrix_shape = (3,27)
-        matrix = np.zeros(matrix_shape)
-        start = 0
-        end = 3
-        for index, digit in enumerate(list(str(self.digit_to_test))):
-            matrix[start:end,start + index * 3:end + index * 3] =  self.characters_num[digit]
 
-        acc_num = get_acc_num(matrix, self.characters_num)
+        acc_num = get_acc_num(self.matrix, self.characters_num)
         print(f"Value obtained {acc_num}")
         acc_num = acc_num.split()
         val_to_compare = int(acc_num[0])
-        if  val_to_compare == self.digit_to_test:
-            pass
-        else:
-            sys.exit()
+        self.assertTrue(val_to_compare == self.digit_to_test)
 
 if __name__ == '__main__':
     unittest.main()
